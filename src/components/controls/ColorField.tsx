@@ -252,9 +252,9 @@ function ColorPickerCard({
       >
         <span
           aria-hidden
-          className="pointer-events-none absolute top-1/2 h-[18px] w-[18px] -translate-x-1/2 -translate-y-1/2 rounded-full"
+          className="pointer-events-none absolute top-1/2 h-[18px] w-[18px] -translate-y-1/2 rounded-full"
           style={{
-            left: `${(hue / 360) * 100}%`,
+            left: `calc(${hue / 360} * (100% - 18px))`,
             background: hueToOklch(hue),
             border: "2px solid oklch(1 0 0)",
             boxShadow: "0 0 0 1px oklch(0 0 0 / 0.55), 0 2px 6px oklch(0 0 0 / 0.55)",
