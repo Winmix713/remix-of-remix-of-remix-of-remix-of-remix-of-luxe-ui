@@ -127,6 +127,13 @@
   --surface-chip: linear-gradient(180deg, oklch(0.3 0.014 262), oklch(0.24 0.014 262));
   --panel-border: oklch(1 0 0 / 0.08);
 
+  /* Canonical cinematic-glass panel recipe — single source of truth */
+  --grad-panel: linear-gradient(180deg, oklch(0.22 0.014 262 / 0.92) 0%, oklch(0.17 0.012 262 / 0.92) 100%);
+  --grad-panel-popover: linear-gradient(180deg, oklch(0.235 0.014 262 / 0.88) 0%, oklch(0.17 0.012 262 / 0.88) 100%);
+  --sheen-top: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.35), transparent);
+  --sheen-section: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.12), transparent);
+  --radial-ambient: radial-gradient(140% 50% at 50% -10%, oklch(1 0 0 / 0.08), transparent 60%);
+
   /* Shadow recipes */
   --shadow-input-inset: inset 0 1px 1.5px oklch(0 0 0 / 0.6), inset 0 0 0 0.5px oklch(0 0 0 / 0.55), 0 1px 0 oklch(1 0 0 / 0.04);
   --shadow-slider-thumb: 0 0 0 0.5px oklch(0 0 0 / 0.6), 0 1px 1px oklch(0 0 0 / 0.5), 0 4px 10px oklch(0 0 0 / 0.4), inset 0 1px 0 oklch(1 0 0 / 0.55);
@@ -135,6 +142,8 @@
   --shadow-swatch: inset 0 1px 0 oklch(1 0 0 / 0.25), inset 0 -1px 0 oklch(0 0 0 / 0.35), 0 1px 2px oklch(0 0 0 / 0.45);
   --grad-accent-pill: radial-gradient(120% 200% at 50% 0%, oklch(0.78 0.16 250) 0%, oklch(0.6 0.2 258) 50%, oklch(0.45 0.18 260) 100%);
   --shadow-accent-pill: inset 0 0.5px 0 oklch(1 0 0 / 0.3), 0 0 0 0.5px oklch(0.4 0.18 260) inset, 0 2px 6px oklch(0.62 0.19 256 / 0.45), 0 0 16px oklch(0.62 0.19 256 / 0.35);
+  --shadow-picker-thumb: 0 0 0 1px oklch(0 0 0 / 0.55), 0 2px 6px oklch(0 0 0 / 0.6);
+  --shadow-picker-thumb-focus: 0 0 0 1px oklch(0 0 0 / 0.55), 0 0 0 3px oklch(0.62 0.19 256 / 0.55), 0 2px 8px oklch(0 0 0 / 0.6);
 
   /* Motion */
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
