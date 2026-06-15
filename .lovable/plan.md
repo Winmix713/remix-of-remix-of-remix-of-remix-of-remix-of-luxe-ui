@@ -1,173 +1,81 @@
+# Plan — Final consistency + responsive + a11y + perf + visual regression
 
-## Goal
+The 8 requests group into 5 work streams. Two items were partly addressed last turn (md grid, hue thumb edge clamp) — I'll re-audit and finish anything missed.
 
-Lift the existing functional editor to a true Apple / Linear / Figma quality bar before adding heavy editor features. The skeleton (store, canvas, layers, properties, code, presets, share) is already in place — this pass replaces the generic-Tailwind look with a coherent design system, real tactile controls, and basic direct manipulation on the canvas.
+## 1. Final style audit — cinematic glass + radial-gradient consistency
 
-Out of scope for this phase: multi-select, marquee, rotation gesture, smart guides/snapping, undo/redo, keyboard shortcuts, alignment actions, grouping. Those land in Phase 2.
+Sweep every component still using ad-hoc colors / shadows and migrate to the shared design tokens (`--surface-input`, `--surface-chip`, `--shadow-panel`, `--shadow-input-inset`, `--panel-border`, edge highlight, top sheen).
 
----
+Audit targets:
+- `LayerPanel`, `PresetsPanel`, `CodePanel` — verify panel shell matches `PropertiesPanel` (same gradient + sheen + edge highlight + radius)
+- `Canvas` chrome (Artboard label, HUDBadge, SelectionFrame, RotationHandle, Marquee) — chip + border tokens
+- `controls/*` (ScrubInput, LinkedQuad, Slider, SegmentedControl, IconButton, Row, Section, ShortcutsHintBar) — confirm token usage, no raw `bg-white/…` hex/oklch literals
+- Radix popovers (`popover-material` class) used by ColorField, dropdown menu, tooltip — single source of truth
+- Inline-styled inputs (e.g. PropertiesPanel rename input) — keep intentional, but document why
 
-## 1. Design system foundation (`src/styles.css`)
+Deliverable: any component using a one-off color/shadow gets switched to the tokens; add a missing token to `src/styles.css` if a real new variant is needed (no token sprawl).
 
-Replace ad-hoc `oklch(...)` literals scattered through components with a single token layer. Add and document under `@theme inline`:
+## 2. ColorField — interaction precision + a11y
 
-- **Surface stack** — `--surface-0/1/2/3` (canvas → panel → row → chip), each with paired hairline border tokens (`--hairline-soft/strong`) and top-edge highlight tokens (`--edge-highlight`).
-- **Material recipes** — `--mat-panel` (rgba bg + `backdrop-filter: blur(24px) saturate(180%)`), `--mat-popover`, `--mat-chip`.
-- **Elevation scale** — `--elev-1/2/3` per spec (ambient + key shadow pair).
-- **Radius tokens** — `xs 6 / sm 8 / md 12 / lg 16 / xl 20 / pill 999`.
-- **Typography tokens** — section label, field label, value, header (sizes, weights, tracking).
-- **Motion tokens** — `--ease-out-soft` `cubic-bezier(.22,1,.36,1)`, durations `90 / 120 / 180 / 220 ms`.
-- **Accent** — keep current blue but desaturate one notch; reserve glow strictly for `selected/active`.
+- **Hue thumb edges**: keep last turn's `calc(${hue/360} * (100% - 18px))` and apply the same inset math to the SV pad marker so the picker handle never clips at corners.
+- **Pixel-exact mapping**: pointer math already uses `getBoundingClientRect`; add `touch-action: none` on SV pad + hue strip so touch drags don't scroll the panel, and round-trip through the same clamp helper so click==drag==value.
+- **Keyboard + ARIA**:
+  - SV pad: `role="slider"` pair via wrapper `role="group"`, arrow keys nudge `c`/`l` by 0.01, Shift = 0.1, Home/End = min/max.
+  - Hue strip: `role="slider"` `aria-valuemin=0` `aria-valuemax=360` `aria-valuenow={hue}`, arrows ±1°, Shift ±10°.
+  - Preset hue buttons: already buttons; add `aria-pressed` on the selected one.
+  - Trigger button: `aria-label="Color: <value>"`.
+  - Focus rings consistent with other controls (`focus-visible:ring-2 ring-white/40`).
 
-Load **Inter** via `<link>` in `__root.tsx` head (per Tailwind v4 rule — no `@import` URL in CSS) and wire `--font-display: "Inter Display", "Inter", ...`.
+## 3. Responsive sweep — sm / md / lg / xl
 
-Sweep components to replace inline `oklch(...)` strings with the new tokens (`bg-[var(--surface-1)]`, `border-[var(--hairline-soft)]`, etc.).
+Verify in the live preview at 360 / 414 / 768 / 820 / 1024 / 1280 / 1440 widths:
+- No horizontal scrollbar at any width.
+- Header (3-col grid) collapses cleanly on sm — promote to `grid-cols-[auto_1fr_auto]` with `min-w-0` + `truncate` on title block, hide the subtitle on `<sm`, keep IconButtons in a `flex-wrap` row.
+- `ShortcutsHintBar` already overflows on narrow widths — add `overflow-x-auto` + `scrollbar-none` or hide on `<md`.
+- LayerPanel on sm: cap at `max-h-[35vh]` and ensure layer names use `truncate` + `min-w-0` (the `Hea…` truncation is intentional but should not break layout).
+- PropertiesPanel inner 2-col grid (`md:max-xl:grid-cols-2`) added last turn — re-check that long values (oklch strings, rotation presets) still fit; if not, drop to 1-col below ~720px.
+- Canvas: confirm `min-w-0` on its grid cell so the SVG/board can shrink, no overflow.
+- Page wrapper: keep `mx-auto max-w-[1600px]` centered; add `px-2 sm:px-3` to outer padding for sm.
 
----
+## 4. `md` breakpoint grid — finish PropertiesPanel fix
 
-## 2. Premium control primitives (`src/components/controls/`)
+Last turn I moved PropertiesPanel to a full-width row on md (`md:col-span-2`) with a 2-col inner grid (`md:max-xl:grid-cols-2`). Final pass:
+- Verify nothing in PropertiesPanel header bar truncates (layer rename input width was `w-40`; switch to `min-w-0 flex-1 max-w-[200px]`).
+- Confirm the EffectsSection list items (drag handle, eye, trash) survive the narrower 2-col cells — add `min-w-0` + `shrink-0` per the responsive grid rule.
+- Make the inner 2-col grid use `auto-rows-min` so sections don't stretch to equal height.
 
-New, reusable, all keyboard-accessible:
+## 5. Performance polish
 
-- **`ScrubInput`** — numeric field that scrubs on horizontal drag of the label/icon (Figma-style), supports `Shift = ×10`, `Alt = ÷10`, arrow keys, focus selects all, optional unit suffix.
-- **`SegmentedControl`** — pill-track with sliding active indicator (`framer-motion`-free; CSS transform + `--ease-out-soft`). Replaces ad-hoc tab bars and the future Linked/Unlinked padding toggle.
-- **`ColorField`** — swatch + hex/oklch input + popover with HSL sliders, alpha, eyedropper-style recent colors row. Built on Radix Popover.
-- **`Slider`** — replace the bare `<input type=range>` with a styled track: 1.5 px rail, 12 px thumb with inner highlight + ambient shadow, fills to value, ticks at integers when range ≤ 20.
-- **`IconButton`** / **`Chip`** — unify the four near-identical button styles currently inline across LayerPanel, PresetsPanel, CodePanel.
-- **`LinkedQuad`** — the four-padding control with a chain icon in the middle that switches between linked (1 input drives all 4) and unlinked (T/R/B/L) modes, with a smooth row-height transition.
-- **`Section`** — refined version of the existing helper: 11/600/0.18em uppercase label, 4 px icon gap, optional right-side action slot, hairline divider.
+- `React.memo` on the four section components (`AppearanceSection`, `TransformSection`, `LayoutSection`, `EffectsSection`) — they re-render on every store change today.
+- Replace any broad `useScene()` calls in leaf controls with selector-scoped subscriptions (`useScene(s => s.field)`) so a slider drag doesn't re-render the whole tree.
+- Slider/ScrubInput: throttle store writes during pointer drag with `requestAnimationFrame` coalescing; commit once on `pointerup`. Keep visual value local during drag.
+- ColorField SV/hue drag: same rAF coalesce.
+- Use `will-change: transform` only during active drag on SelectionFrame/RotationHandle (toggle via class), not statically.
+- Heavy popovers (ColorField, PresetsPanel previews): lazy-mount via Radix's default unmount-on-close behavior — verify, don't keep them mounted.
+- Run `browser--performance_profile` before/after to confirm no INP regressions and LCP unchanged.
 
-Every control gets full state coverage: idle / hover / active / focus-visible / disabled, with transitions on the 120 ms ease-out token.
+## 6. Visual regression tests
 
----
+Add Playwright + a tiny snapshot suite (no CI wiring needed beyond `bun run test:visual`).
 
-## 3. Canvas direct manipulation (`src/components/canvas/`)
+Files:
+- `playwright.config.ts` — three projects: `mobile` (390×844), `tablet` (820×1180), `desktop` (1440×900); `expect.toHaveScreenshot` threshold ~0.2%.
+- `tests/visual/studio.spec.ts` — for each viewport: load `/`, wait for canvas, screenshot full page; then select each layer in turn and snapshot the PropertiesPanel; open ColorField popover and snapshot.
+- `tests/visual/__snapshots__/` baseline committed.
+- `package.json` scripts: `test:visual`, `test:visual:update`.
+- Doc note in `src/routes/README.md` on how to update baselines.
 
-Stays bidirectional with the Zustand store — no local copy.
+Out of scope: wiring this into a CI provider (project has no CI config yet) — leaving the `bun run` script as the entry point.
 
-- **`SelectionFrame`** — overlay rendered for the selected layer: 1 px accent outline with 1 px inner white highlight for crispness on dark; 8 corner + 4 edge handles (8×8 px white squares with shadow), rotation handle stub (visual only this phase).
-- **Drag to move** — pointer-down on a layer initiates move; updates `x/y` on `pointermove` via `requestAnimationFrame`-batched `updateLayer`. Pointer capture on the layer element, no global listeners.
-- **Resize** — handles dispatch resize against the appropriate edge(s); `Shift` preserves aspect ratio; `Alt` resizes from center. Minimum 8×8 px.
-- **Cursor feedback** — move cursor on hover, directional resize cursors per handle, grab/grabbing while dragging.
-- **Hit testing** — clicking inside a layer selects it; clicking the canvas background deselects (already wired). Locked layers ignore pointer-down.
-- **Live HUD** — small pill near the cursor during drag/resize showing `W × H` or `X, Y` in tabular-nums font.
+## Technical notes
 
-All gesture logic in a single `useDragGesture` hook so Phase 2 can plug in snapping/undo without rewriting handlers.
+- All work stays in frontend/presentation files: `src/components/**`, `src/routes/index.tsx`, `src/styles.css`, plus new test files.
+- No store / business-logic changes beyond memoization + selector scoping (behavior-preserving).
+- No new runtime deps except `@playwright/test` (dev dep).
 
----
+## Verification checklist (after build mode)
 
-## 4. Layers panel polish + drag-reorder
-
-- Wire `@dnd-kit/sortable` (already installed) for vertical reorder with a 180 ms ease drop animation and a "lifted" shadow on the dragging row.
-- Row redesign at 28 px compact height: type icon · name · spacer · visibility · lock · overflow menu. Hover reveals controls with a 120 ms fade rather than today's hard `opacity-0/100`.
-- Active row uses a single inset ring + tinted surface; remove the current double-border feel.
-- Header "+ Card / Btn / Text" becomes one `+` icon button opening a popover menu of layer presets — denser, more Linear-like.
-- Rename in place: double-click the row name.
-
----
-
-## 5. Properties panel polish + effect drag-reorder
-
-- Replace bespoke `NumInput`/`SliderRow`/`ColorInput` with the new primitives from §2; the panel becomes mostly composition.
-- **Appearance**: add the spec's `Mode` segmented control (Light / Dark / Auto override stored on the layer; affects rendering of the layer's text/contrast only — does not toggle the whole app theme).
-- **Transform**: add rotation presets row (−90° / 0° / 90°) as a small segmented control next to the rotation slider.
-- **Layout**: padding becomes the `LinkedQuad` control.
-- **Effects**:
-  - Each `EffectCard` becomes sortable via `@dnd-kit/sortable` with a grip on the left; reorder updates the `effects[]` array, which already drives render order.
-  - Collapsible (Radix Collapsible) with 220 ms `--ease-out-soft` height + opacity transition.
-  - "+ Add effect" `<select>` replaced by an icon button + Radix DropdownMenu listing the six kinds with icons and a short description.
-  - Color fields inside effects use the new `ColorField` popover (currently a raw text input — biggest single quality gap).
-
----
-
-## 6. Top chrome + tabs
-
-- Header tabs become a real `SegmentedControl` instead of the current bespoke pill row; the active pill animates between positions.
-- Add a subtle window-chrome top hairline + ambient highlight on the whole shell.
-- Right side of header: replace static `⌘⌥P` text with a `Share` button + an overflow menu (Copy share link, Reset scene, Export JSON) — pulls existing logic from PresetsPanel so the top bar is useful, not decorative.
-
----
-
-## 7. Code + Presets tab polish
-
-- CodePanel: real syntax highlighting via `shiki` (lightweight, server-safe) with a dark theme matching the app (`vesper` or `min-dark`). Add a CSS / Tailwind segmented control reusing §2. "Copy" button gets the new IconButton with a 1200 ms success state.
-- PresetsPanel: redesign rows to match LayerPanel density; inline rename, relative timestamps, thumbnail-less for now but with a layer-count + effect-count pill.
-
----
-
-## 8. Effect rendering polish
-
-Small, high-impact fidelity fixes in `src/lib/effects.ts`:
-
-- Move `box-shadow` to the **outer wrapper only** when no `layerBlur` is active; today `filter: blur` and `box-shadow` on the same node clip the shadow. Conditionally split into an outer "shadow host" wrapping the blur-target so drop shadows survive layer blur — matches Figma.
-- Glass `::before` gets a 1 px inner top highlight (`box-shadow: inset 0 1px 0 var(--edge-highlight)`) per the visionOS material spec.
-- Noise default frequency dropped from `0.9` to `0.65` and `numOctaves` to `2`; current default looks like TV static.
-- Texture `feDisplacementMap` needs an `in2` (the turbulence result) — currently no displacement is actually applied; fix the filter chain.
-
----
-
-## 9. Acceptance checklist for this phase
-
-Before declaring the pass done, eyeball each in the live preview:
-
-1. No bare inline `oklch(...)` left in component JSX — all surfaces use tokens.
-2. Every numeric field is scrubbable; arrow keys + Shift/Alt modifiers work.
-3. Color editing happens in a popover, not a hex text box.
-4. Padding control toggles linked/unlinked with animation.
-5. Layers and effects can be reordered by drag with a visible lift + drop animation.
-6. Selecting a layer on the canvas shows handles; dragging moves it; corner handles resize it; properties panel values update live.
-7. Tab switch in the top bar animates the indicator.
-8. Glass cards have a top inner highlight; drop shadows render correctly even on layers with `layerBlur`.
-9. Hover/focus/active states exist on every control with consistent 120 ms transitions.
-10. The empty canvas + collapsed panels look intentional, not unfinished.
-
----
-
-## File map
-
-```
-src/
-  styles.css                           (tokens + motion + radius scale)
-  routes/__root.tsx                    (Inter font link)
-  components/
-    controls/
-      ScrubInput.tsx
-      SegmentedControl.tsx
-      ColorField.tsx
-      Slider.tsx
-      IconButton.tsx
-      LinkedQuad.tsx
-      Section.tsx
-    canvas/
-      Canvas.tsx                       (cursor + bg click already there)
-      EffectedBox.tsx                  (split outer shadow host vs blur target)
-      SelectionFrame.tsx               (NEW)
-      useDragGesture.ts                (NEW)
-      HUDBadge.tsx                     (NEW)
-    layers/LayerPanel.tsx              (dnd-kit reorder, compact rows, rename)
-    properties/
-      PropertiesPanel.tsx              (composition only)
-      AppearanceSection.tsx
-      TransformSection.tsx
-      LayoutSection.tsx
-      EffectsSection.tsx               (dnd-kit reorder, dropdown add)
-      effect-cards/
-        DropShadowCard.tsx
-        InnerShadowCard.tsx
-        LayerBlurCard.tsx
-        GlassCard.tsx
-        NoiseCard.tsx
-        TextureCard.tsx
-    codegen/CodePanel.tsx              (shiki highlight, segmented)
-    presets/PresetsPanel.tsx           (denser rows, rename, timestamps)
-  lib/
-    effects.ts                         (filter chain fixes)
-```
-
-No new runtime dependencies beyond what's installed (`@dnd-kit/*`, `clsx`, `lz-string`, `lucide-react`, Radix primitives) plus **`shiki`** for code highlighting.
-
----
-
-## Phase 2 (not in this plan, for reference)
-
-Multi-select, marquee, rotation gesture, alignment guides + smart snapping, undo/redo (zustand `temporal` middleware), keyboard shortcuts, copy/paste, grouping. Built on top of the `useDragGesture` hook and the polished surfaces from Phase 1.
+1. `browser--view_preview` at 390 / 768 / 820 / 1024 / 1440 — no horizontal scroll, no truncated controls, PropertiesPanel centered.
+2. Keyboard-drive the ColorField (Tab to trigger → Enter → Tab to SV pad → arrows → Tab to hue → arrows) — values change, focus visible.
+3. `browser--performance_profile` — INP < 200ms while dragging a slider.
+4. `bun run test:visual` — baseline snapshots generated, second run passes clean.
