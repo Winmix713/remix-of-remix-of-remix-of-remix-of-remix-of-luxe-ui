@@ -150,16 +150,16 @@ function Index() {
         </div>
 
 
-        <div className="mx-auto grid min-h-0 w-full max-w-[1600px] flex-1 grid-cols-1 gap-3 md:grid-cols-[180px_minmax(0,1fr)] xl:grid-cols-[200px_minmax(0,1fr)_340px] 2xl:grid-cols-[220px_minmax(0,1fr)_360px]">
-          <div className="min-h-0 max-h-[40vh] md:max-h-none">
+        <div className="mx-auto grid min-h-0 w-full max-w-[1600px] flex-1 grid-cols-1 gap-3 md:grid-cols-[180px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)_auto] xl:grid-cols-[200px_minmax(0,1fr)_340px] xl:grid-rows-1 2xl:grid-cols-[220px_minmax(0,1fr)_360px]">
+          <div className="min-h-0 max-h-[40vh] md:max-h-none md:row-start-1 md:col-start-1 xl:row-span-1">
             <LayerPanel />
           </div>
-          <div className="min-h-0 min-w-0">
+          <div className="min-h-0 min-w-0 md:row-start-1 md:col-start-2 xl:col-start-2">
             {tab === "design" && <Canvas />}
             {tab === "code" && <CodePanel />}
             {tab === "presets" && <PresetsPanel />}
           </div>
-          <div className="min-h-0 max-h-[60vh] xl:max-h-none">
+          <div className="min-h-0 max-h-[60vh] md:max-h-[50vh] md:row-start-2 md:col-span-2 xl:max-h-none xl:row-start-1 xl:col-start-3 xl:col-span-1">
             <PropertiesPanel />
           </div>
         </div>
