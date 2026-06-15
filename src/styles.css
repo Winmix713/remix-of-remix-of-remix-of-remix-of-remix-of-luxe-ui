@@ -215,10 +215,14 @@
   }
 
   /* Focus ring defaults — used on every interactive primitive */
-  :where(button, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+  :where(button, input, select, textarea, [role="button"], [role="slider"], [tabindex]):focus-visible {
     outline: 2px solid var(--accent-blue);
     outline-offset: 1px;
   }
+
+  /* Hide scrollbar utility (used on horizontally-scrollable narrow toolbars) */
+  .scrollbar-none::-webkit-scrollbar { display: none; }
+  .scrollbar-none { scrollbar-width: none; }
 }
 
 /* Reusable utility primitives ------------------------------------------- */
