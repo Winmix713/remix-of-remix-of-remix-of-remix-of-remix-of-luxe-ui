@@ -37,7 +37,15 @@ const TABS = [
 
 function Index() {
   const [tab, setTab] = useState<Tab>("design");
-  const { layers, selectedId, loadScene, resetScene, undo, redo, past, future } = useScene();
+  // Scoped store selectors (avoid full re-renders on unrelated state changes)
+  const layers = useScene((s) => s.layers);
+  const selectedId = useScene((s) => s.selectedId);
+  const loadScene = useScene((s) => s.loadScene);
+  const resetScene = useScene((s) => s.resetScene);
+  const undo = useScene((s) => s.undo);
+  const redo = useScene((s) => s.redo);
+  const past = useScene((s) => s.past);
+  const future = useScene((s) => s.future);
   const [shared, setShared] = useState(false);
   useKeyboardShortcuts();
 
@@ -70,26 +78,26 @@ function Index() {
   };
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-linear-to-b from-[var(--canvas-from)] to-[var(--canvas-to)] text-label-strong">
+    <main className="relative min-h-dvh overflow-hidden bg-linear-to-b from-[var(--canvas-from)] to-[var(--canvas-to)] text-label-strong">
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div className="absolute -top-40 left-1/2 h-[720px] w-[1100px] -translate-x-1/2 rounded-full bg-[radial-gradient(closest-side,oklch(0.62_0.19_256/0.14),transparent_70%)] blur-2xl" />
         <div className="absolute bottom-[-200px] left-[8%] h-[520px] w-[520px] rounded-full bg-[radial-gradient(closest-side,oklch(0.55_0.14_280/0.14),transparent_70%)] blur-3xl" />
       </div>
       <div aria-hidden className="pointer-events-none absolute inset-x-0 top-0 h-px bg-linear-to-r from-transparent via-edge-highlight to-transparent" />
 
-      <div className="relative z-10 flex h-screen flex-col p-3">
-        <header className="mb-3 grid grid-cols-[1fr_auto_1fr] items-center gap-3 px-1">
-          <div className="flex items-center gap-2">
-            <div className="relative h-7 w-7 rounded-[8px] bg-linear-to-br from-accent-blue to-[oklch(0.5_0.18_258)] shadow-[0_4px_14px_oklch(0.62_0.19_256/0.5),inset_0_1px_0_oklch(1_0_0/0.25)]">
+      <div className="relative z-10 flex h-dvh flex-col p-2 sm:p-3">
+        <header className="mb-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-2 px-1 sm:gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="relative h-7 w-7 shrink-0 rounded-[8px] bg-linear-to-br from-accent-blue to-[oklch(0.5_0.18_258)] shadow-[0_4px_14px_oklch(0.62_0.19_256/0.5),inset_0_1px_0_oklch(1_0_0/0.25)]">
               <div className="absolute inset-1 rounded-[5px] border border-white/20" />
             </div>
-            <div>
-              <h1 className="text-[13px] font-semibold tracking-tight leading-none">Properties Studio</h1>
-              <div className="mt-0.5 text-[10px] text-muted-text">Cinematic dark UI editor</div>
+            <div className="min-w-0">
+              <h1 className="truncate text-[13px] font-semibold leading-none tracking-tight">Properties Studio</h1>
+              <div className="mt-0.5 hidden text-[10px] text-muted-text sm:block">Cinematic dark UI editor</div>
             </div>
           </div>
           <SegmentedControl value={tab} onChange={setTab} options={TABS} />
-          <div className="flex items-center justify-end gap-1.5">
+          <div className="flex flex-wrap items-center justify-end gap-1.5">
             <IconButton
               variant="chip"
               size="sm"
@@ -112,9 +120,10 @@ function Index() {
               variant="chip"
               size="sm"
               onClick={onShare}
+              aria-label={shared ? "Share link copied" : "Copy share link"}
               icon={shared ? <Check className="h-3.5 w-3.5 text-[var(--success)]" /> : <Link2 className="h-3.5 w-3.5" />}
             >
-              {shared ? "Link copied" : "Share"}
+              <span className="hidden sm:inline">{shared ? "Link copied" : "Share"}</span>
             </IconButton>
             <DropdownMenu.Root>
               <DropdownMenu.Trigger asChild>
@@ -145,13 +154,13 @@ function Index() {
           </div>
         </header>
 
-        <div className="mb-3 flex items-center justify-center px-1">
+        <div className="scrollbar-none mb-3 hidden overflow-x-auto px-1 md:flex md:items-center md:justify-center">
           <ShortcutsHintBar />
         </div>
 
 
-        <div className="mx-auto grid min-h-0 w-full max-w-[1600px] flex-1 grid-cols-1 gap-3 md:grid-cols-[180px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)_auto] xl:grid-cols-[200px_minmax(0,1fr)_340px] xl:grid-rows-1 2xl:grid-cols-[220px_minmax(0,1fr)_360px]">
-          <div className="min-h-0 max-h-[40vh] md:max-h-none md:row-start-1 md:col-start-1 xl:row-span-1">
+        <div className="mx-auto grid min-h-0 w-full max-w-[1600px] flex-1 grid-cols-1 gap-2 sm:gap-3 md:grid-cols-[180px_minmax(0,1fr)] md:grid-rows-[minmax(0,1fr)_auto] xl:grid-cols-[200px_minmax(0,1fr)_340px] xl:grid-rows-1 2xl:grid-cols-[220px_minmax(0,1fr)_360px]">
+          <div className="min-h-0 max-h-[30vh] md:row-start-1 md:col-start-1 md:max-h-none xl:row-span-1">
             <LayerPanel />
           </div>
           <div className="min-h-0 min-w-0 md:row-start-1 md:col-start-2 xl:col-start-2">
@@ -159,7 +168,7 @@ function Index() {
             {tab === "code" && <CodePanel />}
             {tab === "presets" && <PresetsPanel />}
           </div>
-          <div className="min-h-0 max-h-[60vh] md:max-h-[50vh] md:row-start-2 md:col-span-2 xl:max-h-none xl:row-start-1 xl:col-start-3 xl:col-span-1">
+          <div className="min-h-0 max-h-[55vh] md:row-start-2 md:col-span-2 md:max-h-[50vh] xl:row-start-1 xl:col-start-3 xl:col-span-1 xl:max-h-none">
             <PropertiesPanel />
           </div>
         </div>
