@@ -1,0 +1,251 @@
+@import "tailwindcss" source(none);
+@source "../src";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+/* =============================================================
+ * Properties Studio — Premium design system
+ * Tokens: surfaces, materials, elevation, motion, radius, type.
+ * No bare oklch() literals in component JSX — use these tokens.
+ * ============================================================= */
+
+@theme inline {
+  /* shadcn passthroughs */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --radius-2xl: calc(var(--radius) + 8px);
+  --radius-3xl: calc(var(--radius) + 12px);
+  --radius-4xl: calc(var(--radius) + 16px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-ring-offset-background: var(--background);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  /* App tokens */
+  --color-canvas-from: var(--canvas-from);
+  --color-canvas-to: var(--canvas-to);
+
+  --color-surface-0: var(--surface-0);
+  --color-surface-1: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+
+  --color-hairline-soft: var(--hairline-soft);
+  --color-hairline-strong: var(--hairline-strong);
+  --color-edge-highlight: var(--edge-highlight);
+
+  --color-label: var(--label);
+  --color-label-strong: var(--label-strong);
+  --color-muted-text: var(--muted-text);
+
+  --color-accent-blue: var(--accent-blue);
+  --color-accent-glow: var(--accent-glow);
+  --color-danger: var(--danger);
+  --color-success: var(--success);
+
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "SF Pro Display", "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", monospace;
+}
+
+:root {
+  --radius: 0.875rem;
+
+  /* Cinematic canvas */
+  --background: oklch(0.165 0.013 262);
+  --foreground: oklch(0.96 0.005 260);
+  --canvas-from: oklch(0.155 0.014 262);
+  --canvas-to: oklch(0.205 0.018 258);
+
+  /* Surface stack: canvas → panel → row → chip */
+  --surface-0: oklch(0.155 0.014 262 / 0.6);
+  --surface-1: oklch(0.215 0.014 262 / 0.78);
+  --surface-2: oklch(0.255 0.014 262 / 0.85);
+  --surface-3: oklch(0.30 0.014 262 / 0.92);
+
+  /* Hairlines and edge highlights */
+  --hairline-soft: oklch(1 0 0 / 0.06);
+  --hairline-strong: oklch(1 0 0 / 0.10);
+  --edge-highlight: oklch(1 0 0 / 0.18);
+
+  /* Type ramp */
+  --label: oklch(0.74 0.012 260);
+  --label-strong: oklch(0.94 0.006 260);
+  --muted-text: oklch(0.58 0.012 260);
+
+  /* Accents (slightly desaturated from the original) */
+  --accent-blue: oklch(0.62 0.17 256);
+  --accent-blue-strong: oklch(0.68 0.18 254);
+  --accent-glow: oklch(0.7 0.2 256 / 0.55);
+  --danger: oklch(0.66 0.21 24);
+  --success: oklch(0.74 0.16 152);
+
+  /* Elevation pairs (ambient + key) */
+  --elev-1: 0 1px 0 oklch(1 0 0 / 0.04) inset, 0 1px 2px oklch(0 0 0 / 0.35), 0 2px 6px oklch(0 0 0 / 0.18);
+  --elev-2: 0 1px 0 oklch(1 0 0 / 0.05) inset, 0 6px 16px oklch(0 0 0 / 0.35), 0 2px 4px oklch(0 0 0 / 0.25);
+  --elev-3: 0 1px 0 oklch(1 0 0 / 0.06) inset, 0 24px 60px -12px oklch(0 0 0 / 0.6), 0 8px 24px -8px oklch(0 0 0 / 0.4), 0 0 0 1px oklch(1 0 0 / 0.04) inset;
+  --shadow-panel: 0 0 0 1px oklch(1 0 0 / 0.07), inset 0 1px 0 oklch(1 0 0 / 0.06), 0 1px 0 oklch(0 0 0 / 0.6), 0 30px 80px -20px oklch(0 0 0 / 0.75), 0 14px 40px -12px oklch(0 0 0 / 0.55);
+  --shadow-chip-active: 0 0 0 1px oklch(0.7 0.2 256 / 0.55) inset, 0 6px 22px -4px oklch(0.62 0.19 256 / 0.45);
+
+  /* Inset section shells */
+  --surface-section: linear-gradient(180deg, oklch(0.2 0.014 262 / 0.6) 0%, oklch(0.16 0.012 262 / 0.6) 100%);
+  --surface-section-border: oklch(0 0 0 / 0.45);
+
+  /* Inputs / chips */
+  --surface-input: oklch(0 0 0 / 0.5);
+  --surface-chip: linear-gradient(180deg, oklch(0.3 0.014 262), oklch(0.24 0.014 262));
+  --panel-border: oklch(1 0 0 / 0.08);
+
+  /* Shadow recipes */
+  --shadow-input-inset: inset 0 1px 1.5px oklch(0 0 0 / 0.6), inset 0 0 0 0.5px oklch(0 0 0 / 0.55), 0 1px 0 oklch(1 0 0 / 0.04);
+  --shadow-slider-thumb: 0 0 0 0.5px oklch(0 0 0 / 0.6), 0 1px 1px oklch(0 0 0 / 0.5), 0 4px 10px oklch(0 0 0 / 0.4), inset 0 1px 0 oklch(1 0 0 / 0.55);
+  --shadow-card-float: inset 0 0.5px 0 oklch(1 0 0 / 0.06), inset 0 0 0 0.5px oklch(0 0 0 / 0.4), 0 1px 1px oklch(0 0 0 / 0.45), 0 4px 12px -4px oklch(0 0 0 / 0.4);
+  --shadow-card-lifted: inset 0 0.5px 0 oklch(1 0 0 / 0.1), inset 0 0 0 0.5px oklch(0 0 0 / 0.4), 0 0 0 1px oklch(0.62 0.19 256 / 0.35), 0 6px 18px -4px oklch(0.62 0.19 256 / 0.3), 0 4px 12px -4px oklch(0 0 0 / 0.5);
+  --shadow-swatch: inset 0 1px 0 oklch(1 0 0 / 0.25), inset 0 -1px 0 oklch(0 0 0 / 0.35), 0 1px 2px oklch(0 0 0 / 0.45);
+  --grad-accent-pill: radial-gradient(120% 200% at 50% 0%, oklch(0.78 0.16 250) 0%, oklch(0.6 0.2 258) 50%, oklch(0.45 0.18 260) 100%);
+  --shadow-accent-pill: inset 0 0.5px 0 oklch(1 0 0 / 0.3), 0 0 0 0.5px oklch(0.4 0.18 260) inset, 0 2px 6px oklch(0.62 0.19 256 / 0.45), 0 0 16px oklch(0.62 0.19 256 / 0.35);
+
+  /* Motion */
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-out-quick: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-90: 90ms;
+  --dur-120: 120ms;
+  --dur-180: 180ms;
+  --dur-220: 220ms;
+
+  /* shadcn light passthroughs */
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.129 0.042 264.695);
+  --popover: oklch(0.22 0.014 262);
+  --popover-foreground: oklch(0.96 0.005 260);
+  --primary: oklch(0.62 0.17 256);
+  --primary-foreground: oklch(0.98 0.005 260);
+  --secondary: oklch(0.968 0.007 247.896);
+  --secondary-foreground: oklch(0.208 0.042 265.755);
+  --muted: oklch(0.968 0.007 247.896);
+  --muted-foreground: oklch(0.554 0.046 257.417);
+  --accent: oklch(0.968 0.007 247.896);
+  --accent-foreground: oklch(0.208 0.042 265.755);
+  --destructive: oklch(0.66 0.21 24);
+  --destructive-foreground: oklch(0.984 0.003 247.858);
+  --border: oklch(1 0 0 / 0.08);
+  --input: oklch(1 0 0 / 0.10);
+  --ring: oklch(0.62 0.17 256);
+  --chart-1: oklch(0.646 0.222 41.116);
+  --chart-2: oklch(0.6 0.118 184.704);
+  --chart-3: oklch(0.398 0.07 227.392);
+  --chart-4: oklch(0.828 0.189 84.429);
+  --chart-5: oklch(0.769 0.188 70.08);
+  --sidebar: oklch(0.984 0.003 247.858);
+  --sidebar-foreground: oklch(0.129 0.042 264.695);
+  --sidebar-primary: oklch(0.208 0.042 265.755);
+  --sidebar-primary-foreground: oklch(0.984 0.003 247.858);
+  --sidebar-accent: oklch(0.968 0.007 247.896);
+  --sidebar-accent-foreground: oklch(0.208 0.042 265.755);
+  --sidebar-border: oklch(0.929 0.013 255.508);
+  --sidebar-ring: oklch(0.704 0.04 256.788);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html,
+  body {
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: "cv11", "ss01", "ss03";
+  }
+
+  body {
+    background-color: var(--color-background);
+    color: var(--color-foreground);
+  }
+
+  /* Hide native number input spinners globally for our scrub inputs */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  input[type="number"] {
+    -moz-appearance: textfield;
+  }
+
+  /* Focus ring defaults — used on every interactive primitive */
+  :where(button, input, select, textarea, [role="button"], [tabindex]):focus-visible {
+    outline: 2px solid var(--accent-blue);
+    outline-offset: 1px;
+  }
+}
+
+/* Reusable utility primitives ------------------------------------------- */
+
+@utility panel-material {
+  background:
+    linear-gradient(180deg, oklch(0.255 0.014 262 / 0.82), oklch(0.21 0.014 262 / 0.78));
+  backdrop-filter: blur(24px) saturate(180%);
+  border: 1px solid var(--hairline-soft);
+  box-shadow: var(--elev-3);
+  position: relative;
+}
+@utility panel-material {
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--edge-highlight), transparent);
+    pointer-events: none;
+    border-radius: inherit;
+  }
+}
+
+@utility popover-material {
+  background: oklch(0.22 0.014 262 / 0.94);
+  backdrop-filter: blur(28px) saturate(180%);
+  border: 1px solid var(--hairline-strong);
+  box-shadow: var(--elev-3);
+}
+
+@utility chip-material {
+  background: oklch(1 0 0 / 0.04);
+  border: 1px solid var(--hairline-soft);
+}
+
+@utility hairline {
+  background: linear-gradient(90deg, transparent, var(--hairline-soft), transparent);
+}
