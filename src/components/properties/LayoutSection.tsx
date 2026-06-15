@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useScene, selectSelectedLayer } from "@/store/scene";
 import { Section } from "@/components/controls/Section";
 import { Slider } from "@/components/controls/Slider";
@@ -5,9 +6,9 @@ import { SliderRow } from "@/components/controls/Row";
 import { LinkedQuad } from "@/components/controls/LinkedQuad";
 import { Box } from "lucide-react";
 
-export function LayoutSection() {
+function LayoutSectionImpl() {
   const layer = useScene(selectSelectedLayer)!;
-  const { updateLayer } = useScene();
+  const updateLayer = useScene((s) => s.updateLayer);
   const set = (p: Partial<typeof layer>) => updateLayer(layer.id, p);
 
   return (
@@ -36,3 +37,5 @@ export function LayoutSection() {
     </Section>
   );
 }
+
+export const LayoutSection = memo(LayoutSectionImpl);
