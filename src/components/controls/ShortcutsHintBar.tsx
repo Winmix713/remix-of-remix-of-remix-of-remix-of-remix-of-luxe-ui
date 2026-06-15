@@ -75,7 +75,7 @@ export function ShortcutsHintBar({ items, activeId = null }: { items?: HintItemC
         aria-label="Keyboard shortcuts"
         className="relative flex items-center gap-1 rounded-full border px-2 py-1.5 backdrop-blur-xl"
         style={{
-          background: "linear-gradient(180deg, oklch(0.235 0.014 262 / 0.85) 0%, oklch(0.18 0.012 262 / 0.85) 100%)",
+          background: "var(--grad-panel)",
           borderColor: "var(--panel-border)",
           boxShadow: "var(--shadow-panel)",
         }}
@@ -83,7 +83,7 @@ export function ShortcutsHintBar({ items, activeId = null }: { items?: HintItemC
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-6 top-0 h-px"
-          style={{ background: "linear-gradient(90deg, transparent, oklch(1 0 0 / 0.18), transparent)" }}
+          style={{ background: "var(--sheen-section)" }}
         />
         {resolved.map((item) => (
           <HintItem key={item.id} item={item} active={item.id === activeId} />
