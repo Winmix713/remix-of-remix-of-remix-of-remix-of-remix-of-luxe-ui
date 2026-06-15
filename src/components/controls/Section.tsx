@@ -26,10 +26,7 @@ export function Section({
         <div
           aria-hidden
           className="pointer-events-none absolute inset-x-4 top-0 h-px"
-          style={{
-            background:
-              "linear-gradient(90deg, transparent, oklch(1 0 0 / 0.12), transparent)",
-          }}
+          style={{ background: "var(--sheen-section)" }}
         />
         <div className="flex items-center justify-between px-4 pb-2 pt-3.5">
           <div className="flex items-center gap-2">

@@ -1,5 +1,5 @@
 import * as Popover from "@radix-ui/react-popover";
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent } from "react";
 import { Shuffle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +24,7 @@ const fmtOklch = (p: Parsed) => {
 const hueToOklch = (h: number) => `oklch(0.72 0.2 ${h})`;
 const clamp = (v: number, min = 0, max = 1) => Math.max(min, Math.min(max, v));
 const presetHues = [25, 330, 295, 175, 215, 165, 130, 75, 45];
+const MAX_CHROMA = 0.37;
 
 const RECENT_KEY = "pp:recent-colors:v1";
 const readRecent = (): string[] => {
@@ -45,12 +46,16 @@ export function ColorField({ value, onChange, className, allowGradient = true }:
   useEffect(() => setText(value), [value]);
   useEffect(() => setRecent(readRecent()), []);
 
-  const set = (p: Parsed) => onChange(fmtOklch(p));
+  const set = useCallback((p: Parsed) => onChange(fmtOklch(p)), [onChange]);
+  const triggerLabel = value === "transparent"
+    ? "Color: transparent"
+    : isGradient ? "Color: gradient" : `Color: ${value}`;
 
   return (
     <Popover.Root>
       <Popover.Trigger asChild>
         <button
+          aria-label={triggerLabel}
           className={cn(
             "group relative flex h-9 w-full items-center gap-2.5 rounded-[9px] px-2.5 text-left outline-none transition-colors duration-[var(--dur-120)] hover:bg-[oklch(0_0_0/0.55)] focus-visible:bg-[oklch(0_0_0/0.6)]",
             className,
@@ -82,6 +87,7 @@ export function ColorField({ value, onChange, className, allowGradient = true }:
         <Popover.Content
           sideOffset={10}
           align="end"
+          collisionPadding={12}
           className="z-50 w-auto border-0 bg-transparent p-0 shadow-none outline-none data-[state=open]:animate-in data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95"
         >
           {parsed ? (
@@ -102,7 +108,7 @@ export function ColorField({ value, onChange, className, allowGradient = true }:
             <div
               className="w-[280px] rounded-2xl p-3 backdrop-blur-xl"
               style={{
-                background: "linear-gradient(180deg, oklch(0.235 0.014 262 / 0.88) 0%, oklch(0.17 0.012 262 / 0.88) 100%)",
+                background: "var(--grad-panel-popover)",
                 border: "1px solid var(--panel-border)",
                 boxShadow: "var(--shadow-panel)",
               }}
@@ -146,33 +152,61 @@ function ColorPickerCard({
   onRecent: (r: string) => void;
 }) {
   // Map oklch L/C → 2D pad; H → hue strip
-  const sat = clamp(parsed.c / 0.37);
+  const sat = clamp(parsed.c / MAX_CHROMA);
   const val = clamp(parsed.l);
   const hue = parsed.h;
 
+  // Latest values for rAF coalesced drag updates (avoid stale closures)
+  const parsedRef = useRef(parsed);
+  parsedRef.current = parsed;
+
   const svRef = useRef<HTMLDivElement>(null);
   const svDrag = useRef(false);
+  const svRaf = useRef<number | null>(null);
+  const svPending = useRef<{ s: number; v: number } | null>(null);
+  const flushSV = () => {
+    svRaf.current = null;
+    const p = svPending.current;
+    if (!p) return;
+    onParsedChange({ ...parsedRef.current, c: p.s * MAX_CHROMA, l: p.v });
+    svPending.current = null;
+  };
   const updateSV = (e: PointerEvent | React.PointerEvent) => {
     const el = svRef.current; if (!el) return;
     const r = el.getBoundingClientRect();
     const s = clamp((e.clientX - r.left) / r.width);
     const v = clamp(1 - (e.clientY - r.top) / r.height);
-    onParsedChange({ ...parsed, c: s * 0.37, l: v });
+    svPending.current = { s, v };
+    if (svRaf.current == null) svRaf.current = requestAnimationFrame(flushSV);
   };
 
   const hueRef = useRef<HTMLDivElement>(null);
   const hueDrag = useRef(false);
+  const hueRaf = useRef<number | null>(null);
+  const huePending = useRef<number | null>(null);
+  const flushHue = () => {
+    hueRaf.current = null;
+    if (huePending.current == null) return;
+    onParsedChange({ ...parsedRef.current, h: huePending.current });
+    huePending.current = null;
+  };
   const updateHue = (e: PointerEvent | React.PointerEvent) => {
     const el = hueRef.current; if (!el) return;
     const r = el.getBoundingClientRect();
     const t = clamp((e.clientX - r.left) / r.width);
-    onParsedChange({ ...parsed, h: Math.round(t * 360) });
+    huePending.current = Math.round(t * 360);
+    if (hueRaf.current == null) hueRaf.current = requestAnimationFrame(flushHue);
   };
+
+  useEffect(() => () => {
+    if (svRaf.current != null) cancelAnimationFrame(svRaf.current);
+    if (hueRaf.current != null) cancelAnimationFrame(hueRaf.current);
+  }, []);
 
   const randomize = () => {
     onParsedChange({
       l: clamp(Math.random() * 0.4 + 0.55),
-      c: clamp(Math.random() * 0.5 + 0.5) * 0.37,
+      c: clamp(Math.random() * 0.5 + 0.5) * MAX_CHROMA,
       h: Math.floor(Math.random() * 361),
       a: parsed.a,
     });
@@ -180,16 +214,51 @@ function ColorPickerCard({
 
   const selectedPresetIndex = presetHues.findIndex((h) => Math.abs(h - hue) < 20);
 
+  // Keyboard: SV pad (chroma + lightness)
+  const onSVKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const big = e.shiftKey ? 0.1 : 0.01;
+    let nc = parsed.c;
+    let nl = parsed.l;
+    switch (e.key) {
+      case "ArrowLeft":  nc = clamp(parsed.c - big * MAX_CHROMA, 0, MAX_CHROMA); break;
+      case "ArrowRight": nc = clamp(parsed.c + big * MAX_CHROMA, 0, MAX_CHROMA); break;
+      case "ArrowUp":    nl = clamp(parsed.l + big); break;
+      case "ArrowDown":  nl = clamp(parsed.l - big); break;
+      case "Home":       nc = 0; nl = parsed.l; break;
+      case "End":        nc = MAX_CHROMA; nl = parsed.l; break;
+      default: return;
+    }
+    e.preventDefault();
+    onParsedChange({ ...parsed, c: nc, l: nl });
+  };
+
+  // Keyboard: hue strip
+  const onHueKey = (e: KeyboardEvent<HTMLDivElement>) => {
+    const step = e.shiftKey ? 10 : 1;
+    let nh = parsed.h;
+    switch (e.key) {
+      case "ArrowLeft":
+      case "ArrowDown": nh = (parsed.h - step + 360) % 360; break;
+      case "ArrowRight":
+      case "ArrowUp":   nh = (parsed.h + step) % 360; break;
+      case "Home":      nh = 0; break;
+      case "End":       nh = 359; break;
+      default: return;
+    }
+    e.preventDefault();
+    onParsedChange({ ...parsed, h: Math.round(nh) });
+  };
+
   return (
     <div
-      className="relative w-[280px] rounded-2xl p-3 backdrop-blur-xl"
+      className="relative w-[280px] max-w-[calc(100vw-24px)] rounded-2xl p-3 backdrop-blur-xl"
       style={{
-        background: "linear-gradient(180deg, oklch(0.235 0.014 262 / 0.88) 0%, oklch(0.17 0.012 262 / 0.88) 100%)",
+        background: "var(--grad-panel-popover)",
         border: "1px solid var(--panel-border)",
         boxShadow: "var(--shadow-panel)",
       }}
     >
-      <div aria-hidden className="pointer-events-none absolute inset-x-8 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, oklch(1 0 0 / 0.18), transparent)" }} />
+      <div aria-hidden className="pointer-events-none absolute inset-x-8 top-0 h-px" style={{ background: "var(--sheen-section)" }} />
 
       {/* Preset hues */}
       <div className="mb-3 grid grid-cols-9 gap-1.5 px-0.5">
@@ -198,6 +267,7 @@ function ColorPickerCard({
             key={h}
             type="button"
             aria-label={`Hue ${h}°`}
+            aria-pressed={i === selectedPresetIndex}
             onClick={() => onParsedChange({ ...parsed, h })}
             className="relative inline-block aspect-square w-full rounded-full transition-transform duration-100 hover:scale-110 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/50"
             style={{
@@ -214,25 +284,34 @@ function ColorPickerCard({
       {/* SV pad */}
       <div
         ref={svRef}
+        role="slider"
+        tabIndex={0}
+        aria-label="Saturation and lightness"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={Math.round(val * 100)}
+        aria-valuetext={`Chroma ${(sat * 100).toFixed(0)}%, lightness ${(val * 100).toFixed(0)}%`}
+        onKeyDown={onSVKey}
         onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); svDrag.current = true; updateSV(e); }}
         onPointerMove={(e) => { if (svDrag.current) updateSV(e); }}
-        onPointerUp={(e) => { try { e.currentTarget.releasePointerCapture(e.pointerId); } catch {} svDrag.current = false; }}
-        className="relative h-[180px] w-full cursor-crosshair overflow-hidden rounded-xl"
+        onPointerUp={(e) => { try { e.currentTarget.releasePointerCapture(e.pointerId); } catch {} svDrag.current = false; if (svRaf.current != null) { cancelAnimationFrame(svRaf.current); svRaf.current = null; flushSV(); } }}
+        className="relative h-[180px] w-full cursor-crosshair touch-none overflow-hidden rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
         style={{
           backgroundColor: hueToOklch(hue),
           backgroundImage:
             "linear-gradient(180deg, transparent 0%, oklch(0 0 0) 100%), linear-gradient(90deg, oklch(1 0 0) 0%, transparent 100%)",
           boxShadow: "inset 0 0 0 1px oklch(0 0 0 / 0.45), inset 0 1px 0 oklch(1 0 0 / 0.08), 0 1px 2px oklch(0 0 0 / 0.5)",
+          touchAction: "none",
         }}
       >
         <span
           aria-hidden
-          className="pointer-events-none absolute h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full"
+          className="pointer-events-none absolute h-4 w-4 rounded-full"
           style={{
-            left: `${sat * 100}%`,
-            top: `${(1 - val) * 100}%`,
+            left: `calc(${sat} * (100% - 16px))`,
+            top: `calc(${1 - val} * (100% - 16px))`,
             border: "2px solid oklch(1 0 0)",
-            boxShadow: "0 0 0 1px oklch(0 0 0 / 0.55), 0 2px 6px oklch(0 0 0 / 0.6)",
+            boxShadow: "var(--shadow-picker-thumb)",
           }}
         />
       </div>
@@ -240,14 +319,23 @@ function ColorPickerCard({
       {/* Hue strip — full width matches SV pad */}
       <div
         ref={hueRef}
+        role="slider"
+        tabIndex={0}
+        aria-label="Hue"
+        aria-valuemin={0}
+        aria-valuemax={360}
+        aria-valuenow={Math.round(hue)}
+        aria-valuetext={`${Math.round(hue)} degrees`}
+        onKeyDown={onHueKey}
         onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); hueDrag.current = true; updateHue(e); }}
         onPointerMove={(e) => { if (hueDrag.current) updateHue(e); }}
-        onPointerUp={(e) => { try { e.currentTarget.releasePointerCapture(e.pointerId); } catch {} hueDrag.current = false; }}
-        className="relative mt-3 h-[22px] w-full cursor-ew-resize rounded-full"
+        onPointerUp={(e) => { try { e.currentTarget.releasePointerCapture(e.pointerId); } catch {} hueDrag.current = false; if (hueRaf.current != null) { cancelAnimationFrame(hueRaf.current); hueRaf.current = null; flushHue(); } }}
+        className="relative mt-3 h-[22px] w-full cursor-ew-resize touch-none rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent-blue focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
         style={{
           background:
             "linear-gradient(90deg, oklch(0.7 0.22 25), oklch(0.7 0.25 330), oklch(0.62 0.24 295), oklch(0.7 0.16 250), oklch(0.7 0.16 215), oklch(0.7 0.18 175), oklch(0.78 0.2 130), oklch(0.78 0.17 75), oklch(0.7 0.2 45), oklch(0.7 0.22 25))",
           boxShadow: "inset 0 0 0 1px oklch(0 0 0 / 0.4), inset 0 1px 0 oklch(1 0 0 / 0.12), 0 1px 2px oklch(0 0 0 / 0.5)",
+          touchAction: "none",
         }}
       >
         <span
@@ -257,7 +345,7 @@ function ColorPickerCard({
             left: `calc(${hue / 360} * (100% - 18px))`,
             background: hueToOklch(hue),
             border: "2px solid oklch(1 0 0)",
-            boxShadow: "0 0 0 1px oklch(0 0 0 / 0.55), 0 2px 6px oklch(0 0 0 / 0.55)",
+            boxShadow: "var(--shadow-picker-thumb)",
           }}
         />
       </div>
@@ -282,12 +370,13 @@ function ColorPickerCard({
             onChange={(e) => setText(e.target.value)}
             onBlur={commitText}
             onKeyDown={(e) => { if (e.key === "Enter") (e.target as HTMLInputElement).blur(); }}
+            aria-label="Color value"
             className="w-full min-w-0 bg-transparent font-mono text-[12px] tracking-tight text-white/85 outline-none"
           />
         </div>
         <button
           type="button"
-          aria-label="Randomize"
+          aria-label="Randomize color"
           onClick={randomize}
           className="inline-flex h-[30px] w-[30px] shrink-0 items-center justify-center rounded-lg transition-opacity hover:opacity-80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
           style={{
@@ -308,7 +397,8 @@ function ColorPickerCard({
               <button
                 key={i}
                 onClick={() => onRecent(r)}
-                className="aspect-square w-full rounded-[6px]"
+                aria-label={`Use recent color ${r}`}
+                className="aspect-square w-full rounded-[6px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/40"
                 style={{ background: r, boxShadow: "var(--shadow-swatch)" }}
                 title={r}
               />

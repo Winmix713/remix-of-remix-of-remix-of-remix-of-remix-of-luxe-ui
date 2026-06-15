@@ -38,7 +38,7 @@ export function CodePanel() {
   }, [code, tab]);
 
   const panelStyle = {
-    background: "linear-gradient(180deg, oklch(0.22 0.014 262 / 0.92) 0%, oklch(0.17 0.012 262 / 0.92) 100%)",
+    background: "var(--grad-panel)",
     boxShadow: "var(--shadow-panel)",
   } as const;
 
@@ -58,7 +58,7 @@ export function CodePanel() {
       className="relative flex h-full flex-col overflow-hidden rounded-[22px] backdrop-blur-2xl"
       style={panelStyle}
     >
-      <div aria-hidden className="pointer-events-none absolute inset-x-8 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, oklch(1 0 0 / 0.35), transparent)" }} />
+      <div aria-hidden className="pointer-events-none absolute inset-x-8 top-0 h-px" style={{ background: "var(--sheen-top)" }} />
       <div className="relative flex items-center justify-between px-4 py-3">
         <SegmentedControl value={tab} onChange={setTab} options={TABS} size="sm" />
         <IconButton
