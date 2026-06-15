@@ -71,7 +71,7 @@ export function PropertiesPanel() {
         />
       </div>
       <div className="mx-4 h-px bg-linear-to-r from-transparent via-[oklch(1_0_0/0.08)] to-transparent" />
-      <div className="relative flex-1 overflow-auto pt-2">
+      <div className="relative flex-1 overflow-auto pt-2 md:max-xl:grid md:max-xl:grid-cols-2 md:max-xl:gap-x-2 md:max-xl:px-1">
         <AppearanceSection />
         <TransformSection />
         <LayoutSection />
