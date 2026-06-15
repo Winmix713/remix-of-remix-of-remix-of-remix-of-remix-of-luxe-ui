@@ -153,7 +153,8 @@ function EffectCard({
   dragAttributes: Attributes;
   dragListeners: Listeners;
 }) {
-  const { updateEffect, removeEffect } = useScene();
+  const updateEffect = useScene((s) => s.updateEffect);
+  const removeEffect = useScene((s) => s.removeEffect);
   const [open, setOpen] = useState(true);
   const upd = (patch: Partial<Effect>) => updateEffect(layerId, effect.id, patch);
   const Icon = EFFECT_ICONS[effect.kind];
