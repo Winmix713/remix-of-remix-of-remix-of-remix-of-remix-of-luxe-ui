@@ -105,6 +105,8 @@ function EffectsSectionImpl() {
   );
 }
 
+export const EffectsSection = memo(EffectsSectionImpl);
+
 function SortableEffectCard({ effect, layerId }: { effect: Effect; layerId: string }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({ id: effect.id });
   const style = {
