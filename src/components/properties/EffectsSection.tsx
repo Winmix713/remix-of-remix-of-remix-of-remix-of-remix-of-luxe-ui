@@ -35,9 +35,10 @@ const EFFECT_DESCRIPTIONS: Record<EffectKind, string> = {
 
 const EFFECT_KINDS: EffectKind[] = ["dropShadow", "innerShadow", "layerBlur", "glass", "noise", "texture"];
 
-export function EffectsSection() {
+function EffectsSectionImpl() {
   const layer = useScene(selectSelectedLayer)!;
-  const { addEffect, reorderEffects } = useScene();
+  const addEffect = useScene((s) => s.addEffect);
+  const reorderEffects = useScene((s) => s.reorderEffects);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 4 } }));
 
   const onDragEnd = (e: DragEndEvent) => {
