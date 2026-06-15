@@ -166,20 +166,23 @@ function EffectCard({
           {...dragAttributes}
           {...(dragListeners ?? {})}
           aria-label="Drag to reorder"
-          className="cursor-grab text-muted-text hover:text-label-strong active:cursor-grabbing"
+          className="shrink-0 cursor-grab text-muted-text hover:text-label-strong active:cursor-grabbing"
         >
           <GripVertical className="h-3.5 w-3.5" />
         </button>
         <Collapsible.Trigger asChild>
-          <button className="group flex flex-1 items-center gap-1.5 text-left">
+          <button
+            aria-label={`Toggle ${effectShortLabel[effect.kind]} details`}
+            className="group flex min-w-0 flex-1 items-center gap-1.5 text-left"
+          >
             <ChevronDown
-              className={`h-3 w-3 text-muted-text transition-transform duration-[var(--dur-180)] ${open ? "" : "-rotate-90"}`}
+              className={`h-3 w-3 shrink-0 text-muted-text transition-transform duration-[var(--dur-180)] ${open ? "" : "-rotate-90"}`}
             />
-            <Icon className="h-3.5 w-3.5 text-muted-text" />
-            <span className="text-[11.5px] font-medium tracking-tight text-label-strong">
+            <Icon className="h-3.5 w-3.5 shrink-0 text-muted-text" />
+            <span className="shrink-0 text-[11.5px] font-medium tracking-tight text-label-strong">
               {effectShortLabel[effect.kind]}
             </span>
-            <span className="text-[10.5px] text-muted-text">
+            <span className="min-w-0 truncate text-[10.5px] text-muted-text">
               {effect.kind === "dropShadow" || effect.kind === "innerShadow"
                 ? `${effect.x},${effect.y} • ${effect.blur}`
                 : effect.kind === "layerBlur" || effect.kind === "glass"
@@ -190,13 +193,15 @@ function EffectCard({
         </Collapsible.Trigger>
         <button
           onClick={() => upd({ enabled: !effect.enabled } as Partial<Effect>)}
-          className="text-muted-text transition-colors hover:text-label-strong"
+          aria-label={effect.enabled ? "Disable effect" : "Enable effect"}
+          className="shrink-0 text-muted-text transition-colors hover:text-label-strong"
         >
           {effect.enabled ? <Eye className="h-3.5 w-3.5" /> : <EyeOff className="h-3.5 w-3.5" />}
         </button>
         <button
           onClick={() => removeEffect(layerId, effect.id)}
-          className="text-muted-text transition-colors hover:text-[var(--danger)]"
+          aria-label="Remove effect"
+          className="shrink-0 text-muted-text transition-colors hover:text-[var(--danger)]"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
