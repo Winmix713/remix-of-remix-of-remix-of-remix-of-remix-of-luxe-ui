@@ -57,11 +57,11 @@ export function PresetsPanel() {
     <div
       className="relative flex h-full flex-col gap-3 overflow-hidden rounded-[22px] p-4 backdrop-blur-2xl"
       style={{
-        background: "linear-gradient(180deg, oklch(0.22 0.014 262 / 0.92) 0%, oklch(0.17 0.012 262 / 0.92) 100%)",
+        background: "var(--grad-panel)",
         boxShadow: "var(--shadow-panel)",
       }}
     >
-      <div aria-hidden className="pointer-events-none absolute inset-x-8 top-0 h-px" style={{ background: "linear-gradient(90deg, transparent, oklch(1 0 0 / 0.35), transparent)" }} />
+      <div aria-hidden className="pointer-events-none absolute inset-x-8 top-0 h-px" style={{ background: "var(--sheen-top)" }} />
       <div className="flex flex-wrap gap-2">
         <input
           value={name}
