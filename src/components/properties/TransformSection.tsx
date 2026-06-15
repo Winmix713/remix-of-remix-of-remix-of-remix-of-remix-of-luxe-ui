@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { useScene, selectSelectedLayer } from "@/store/scene";
 import { Section } from "@/components/controls/Section";
 import { ScrubInput } from "@/components/controls/ScrubInput";
@@ -12,9 +13,9 @@ const ROTATION_PRESETS = [
   { value: "90", label: "90°" },
 ] as const;
 
-export function TransformSection() {
+function TransformSectionImpl() {
   const layer = useScene(selectSelectedLayer)!;
-  const { updateLayer } = useScene();
+  const updateLayer = useScene((s) => s.updateLayer);
   const set = (p: Partial<typeof layer>) => updateLayer(layer.id, p);
   const rotKey = layer.rotation === -90 ? "-90" : layer.rotation === 90 ? "90" : layer.rotation === 0 ? "0" : "";
 
@@ -48,3 +49,5 @@ export function TransformSection() {
     </Section>
   );
 }
+
+export const TransformSection = memo(TransformSectionImpl);
