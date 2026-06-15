@@ -7,7 +7,8 @@ import { Layers } from "lucide-react";
 
 export function PropertiesPanel() {
   const layer = useScene(selectSelectedLayer);
-  const { renameLayer } = useScene();
+  const renameLayer = useScene((s) => s.renameLayer);
+
 
   if (!layer) {
     return (
