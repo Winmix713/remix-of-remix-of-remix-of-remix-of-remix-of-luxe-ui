@@ -1,0 +1,40 @@
+Explore • 4 Files • 1 SearchThought for a momentMegnézem a főoldal kódjait, hogy javaslatokat tudjak adni. Először feltérképezem a projektet.
+
+Thought for 1sÁtnézem a főoldal fő komponenseit.
+
+Explore • 5 FilesThought for 7sÁtnéztem a főoldal teljes kódját (`App.tsx`, `Header`, `LeagueTable`, `NewLeagueModal`, `types.ts`, `types.tsx`, `calculations.ts`). Itt vannak a fejlesztési javaslataim, és hogy a `web-design-guidelines` / `tailwind-design-system` skillt hogyan illesztheted a jelenlegi tartalomhoz.
+
+## 1. Kritikus / funkcionális hibák
+
+- **Típus-ütközés a `Match` típusnál.** Két párhuzamos definíció létezik: `types.ts` (gazdag, 13 mezős `Match` interface) és `types.tsx` (Zod-alapú, 4 mezős `Match`). Az `App.tsx` a `./types`-ból importál, a `calculations.ts` viszont a saját Zod sémáját használja. Ez most véletlenül működik, de törékeny — **érdemes egyetlen forrásra (`types.ts`) konszolidálni**, és a `calculations` validációját ehhez igazítani.
+- **`onCreateLeague` Promise-eltérés.** A `NewLeagueModal` `(leagueId) => Promise<void>`-t vár, az `App.tsx` `handleCreateLeague`-je viszont szinkron `void`. A modal `await`-eli, így működik, de a típus félrevezető — tedd a handlert ténylegesen `async`-ká (pl. ha később DB-be írsz).
+- **Nincs valódi adatperzisztencia.** Minden state memóriában él (`initialLeagues`, `matches`), újratöltéskor elveszik. Ha „éles" appot szeretnél, javaslom a **Neon (Postgres)** integrációt a ligák/meccsek tárolására.
+- **`handleCreateLeague` mindig fix nevet/szezont ad** (`League ${id}`, `2023-2024`) — a modalban érdemes nevet és szezont is bekérni.
+
+
+## 2. Design token / skill-implementáció (web-design-guidelines + tailwind-design-system)
+
+A legnagyobb eltérés a guideline-októl: **mindenhol hardcode-olt színek vannak** (`bg-[#101820]`, `bg-[#0a0f14]`, `text-white`, `text-gray-400`, `bg-blue-500`, `text-blue-400`…). A skill központi elve a **szemantikus design tokenek**. Javasolt lépések:
+
+1. **Tokenek bevezetése** a `globals.css`-ben (`--background`, `--card`, `--foreground`, `--muted-foreground`, `--primary`, `--border` stb.) a jelenlegi sötét palettával — pl. `--background` = a `#101820`, `--card` = `#0a0f14`, `--primary` = a kék.
+2. **Csere a komponensekben:** `bg-[#101820]` → `bg-background`, `bg-[#0a0f14]` → `bg-card`, `text-white` → `text-foreground`, `text-gray-400` → `text-muted-foreground`, `bg-blue-500` → `bg-primary`, `border-white/5` → `border-border`. Így a téma egy helyen módosítható és konzisztens lesz.
+3. **Színszám csökkentése:** jelenleg az `ActionButton` 4 színt használ (blue/yellow/green/red) — a guideline max 3-5 színt javasol. A piros (destruktív) és a primary maradhat, a többit érdemes egységesíteni `muted`/`accent` tokenné.
+
+
+## 3. Akadálymentesség / UX
+
+- **Search input nincs összekötve címkével a state-tel kontroláltan** — most uncontrolled, ami rendben van, de a `searchTerm` resetje (pl. törlés) nem tükröződik. Tedd controlled inputtá.
+- **Modal `onCreateLeague` hibakezelés** jó, de a `Bell`/`Settings` gombok a Headerben **nem csinálnak semmit** és nincs `aria-label`-jük — adj nekik feliratot vagy funkciót.
+- **Üres állapot** szépen kezelve a `LeagueTable`-ben — ez jó pattern.
+- A `LeagueTable` `colSpan={6}` helyes, de a sticky header és a `overflow-x-auto` mobilon érdemes tesztelni (responsive skill: 44×44px touch target, a 8×8-as ikongombok ~32px, kicsit kicsik mobilra).
+
+
+## 4. Architektúra
+
+- A `services/` és `analysis/` réteg (cache, ML, rule-engine, reporting) **kiterjedt, de a főoldal (`App.tsx`) ezekből semmit nem használ** — érdemes tisztázni, mi az élő kód és mi a jövőbeli/halott kód.
+- `App.tsx` egyetlen nagy `AppState` objektumot kezel — működik, de a `useReducer` tisztább lenne ennyi akcióhoz (`view/edit/complete/delete/create`).
+
+
+---
+
+Szeretnéd, hogy **el is végezzem** a legfontosabbat — pl. a design tokenek bevezetését és a hardcode-olt színek lecserélését szemantikus tokenekre a főoldalon (Header, App, LeagueTable, NewLeagueModal), illetve a duplikált `Match` típus konszolidálását? Szólj, melyikkel kezdjem.
